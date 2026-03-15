@@ -1,17 +1,17 @@
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const get  = p => fetch(BASE+p).then(r => { if(!r.ok) throw new Error(`API ${r.status}`); return r.json() })
 
-export const fetchNews           = ({category='all',source='all',sector='',q='',limit=60}={}) => {
-  const p = new URLSearchParams({category,source,limit})
+export const fetchNews = ({category='all', source='all', sector='', region='all', q='', limit=60}={}) => {
+  const p = new URLSearchParams({category, source, region, limit})
   if(sector) p.set('sector', sector)
   if(q)      p.set('q', q)
   return get(`/api/news?${p}`)
 }
-export const fetchCategories     = () => get('/api/categories')
-export const fetchSources        = () => get('/api/sources')
-export const fetchSectors        = () => get('/api/sectors')
-export const fetchTrendingSectors= () => get('/api/sectors/trending')
-export const fetchStats          = () => get('/api/stats')
+export const fetchCategories      = () => get('/api/categories')
+export const fetchSources         = () => get('/api/sources')
+export const fetchSectors         = () => get('/api/sectors')
+export const fetchTrendingSectors = () => get('/api/sectors/trending')
+export const fetchStats           = () => get('/api/stats')
 
 export const analyzeArticle = payload =>
   fetch(`${BASE}/api/analyze`, {

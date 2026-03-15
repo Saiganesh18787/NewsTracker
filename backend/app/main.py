@@ -22,20 +22,25 @@ async def news(
     category: str = Query("all"),
     source:   str = Query("all"),
     sector:   str = Query(""),
+    region:   str = Query("all"),   # all | india | international
     q:        str = Query(""),
     limit:    int = Query(60),
 ):
     arts = await get_articles()
+
     if category != "all":
         arts = [a for a in arts if a["category"] == category]
     if source != "all":
         arts = [a for a in arts if a["source"] == source]
     if sector:
         arts = [a for a in arts if sector in a.get("sectors", [])]
+    if region != "all":
+        arts = [a for a in arts if a.get("region", "india") == region]
     if q:
         ql = q.lower()
         arts = [a for a in arts
                 if ql in a["title"].lower() or ql in a["summary"].lower()]
+
     return {"total": len(arts), "articles": arts[:limit]}
 
 
@@ -44,6 +49,20 @@ async def categories():
     arts = await get_articles()
     cats = sorted({a["category"] for a in arts})
     return {"categories": ["all"] + cats}
+
+
+@app.get("/api/categories/india")
+async def india_categories():
+    arts = await get_articles()
+    cats = sorted({a["category"] for a in arts if a.get("region") == "india"})
+    return {"categories": cats}
+
+
+@app.get("/api/categories/international")
+async def international_categories():
+    arts = await get_articles()
+    cats = sorted({a["category"] for a in arts if a.get("region") == "international"})
+    return {"categories": cats}
 
 
 @app.get("/api/sources")
@@ -55,18 +74,11 @@ async def sources():
 
 @app.get("/api/sectors")
 async def sectors_list():
-    """Return all sector definitions with metadata."""
-    return {
-        "sectors": [
-            {"name": name, **SECTORS[name]}
-            for name in SECTORS
-        ]
-    }
+    return {"sectors": [{"name": name, **SECTORS[name]} for name in SECTORS]}
 
 
 @app.get("/api/sectors/trending")
 async def trending_sectors():
-    """Return sectors ranked by number of articles mentioning them today."""
     arts = await get_articles()
     counts: dict[str, int] = {}
     for a in arts:
@@ -88,15 +100,24 @@ async def trending_sectors():
 async def stats():
     arts = await get_articles()
     by_src = {}; by_cat = {}; by_sector = {}
+    india_count = 0; intl_count = 0
     for a in arts:
         by_src[a["source"]]   = by_src.get(a["source"], 0)   + 1
         by_cat[a["category"]] = by_cat.get(a["category"], 0) + 1
         for s in a.get("sectors", []):
             by_sector[s] = by_sector.get(s, 0) + 1
+        if a.get("region") == "india":
+            india_count += 1
+        else:
+            intl_count += 1
     top = sorted(by_sector.items(), key=lambda x: x[1], reverse=True)[:8]
     return {
-        "total": len(arts), "by_source": by_src,
-        "by_category": by_cat, "top_sectors": top,
+        "total": len(arts),
+        "india": india_count,
+        "international": intl_count,
+        "by_source": by_src,
+        "by_category": by_cat,
+        "top_sectors": top,
     }
 
 

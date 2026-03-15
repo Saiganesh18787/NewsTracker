@@ -9,6 +9,7 @@ export function useNews() {
   const [category,   setCategory]   = useState('all')
   const [source,     setSource]     = useState('all')
   const [sector,     setSector]     = useState('')
+  const [region,     setRegion]     = useState('all')
   const [query,      setQuery]      = useState('')
   const [loading,    setLoading]    = useState(true)
   const [error,      setError]      = useState(null)
@@ -23,19 +24,24 @@ export function useNews() {
   const load = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const d = await fetchNews({ category, source, sector, q: query })
+      const d = await fetchNews({ category, source, sector, region, q: query })
       setArticles(d.articles); setTotal(d.total)
     } catch(e) { setError(e.message) }
     finally { setLoading(false) }
-  }, [category, source, sector, query])
+  }, [category, source, sector, region, query])
 
   useEffect(() => {
     const t = setTimeout(load, query ? 350 : 0)
     return () => clearTimeout(t)
   }, [load, query])
 
-  return { articles, categories, sources, stats,
-           category, setCategory, source, setSource,
-           sector, setSector, query, setQuery,
-           loading, error, total }
+  return {
+    articles, categories, sources, stats,
+    category, setCategory,
+    source,   setSource,
+    sector,   setSector,
+    region,   setRegion,
+    query,    setQuery,
+    loading,  error, total,
+  }
 }

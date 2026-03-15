@@ -5,13 +5,20 @@ import TrendingSectors from './components/TrendingSectors'
 import SectorPanel from './components/SectorPanel'
 
 const CAT_ICONS = {
-  all:'⚡', markets:'📈', business:'💼', economy:'🏛',
-  national:'🇮🇳', technology:'💻', startups:'🚀',
-  commodities:'🪙', policy:'📜', top:'🔥',
+  all:'⚡', top:'🔥', national:'🇮🇳', policy:'📜',
+  markets:'📈', business:'💼', economy:'🏛', technology:'💻',
+  startups:'🚀', commodities:'🪙',
+  world:'🌍', 'global-markets':'💹', 'global-tech':'🖥',
+  geopolitics:'🗺', science:'🔬',
 }
 
+const INDIA_CATS   = ['top','national','policy','markets','business','economy','technology','startups','commodities']
+const INTL_CATS    = ['world','global-markets','global-tech','geopolitics','science']
+
 export default function App() {
-  const [dark, setDark] = useState(false)
+  const [dark, setDark]           = useState(false)
+  const [regionTab, setRegionTab] = useState('all') // all | india | international
+
   const {
     articles, categories, sources, stats,
     category, setCategory, source, setSource,
@@ -23,6 +30,13 @@ export default function App() {
     setSector(s => s === name ? '' : name)
     setCategory('all')
   }
+
+  // Filter categories based on region tab
+  const visibleCats = regionTab === 'all'
+    ? ['all', ...INDIA_CATS, ...INTL_CATS].filter(c => c === 'all' || categories.includes(c))
+    : regionTab === 'india'
+    ? ['all', ...INDIA_CATS].filter(c => c === 'all' || categories.includes(c))
+    : ['all', ...INTL_CATS].filter(c => c === 'all' || categories.includes(c))
 
   return (
     <div className={`it-root ${dark?'dark':''}`}>
@@ -67,21 +81,44 @@ export default function App() {
           </div>
         </div>
 
-        {/* Category tabs */}
+        {/* ── REGION TABS ── */}
+        <div className="it-region-tabs">
+          {[
+            { key: 'all',           label: '⚡ All News' },
+            { key: 'india',         label: '🇮🇳 India' },
+            { key: 'international', label: '🌍 International' },
+          ].map(r => (
+            <button
+              key={r.key}
+              className={`it-region-tab ${regionTab === r.key ? 'active' : ''}`}
+              onClick={() => { setRegionTab(r.key); setCategory('all'); setSector('') }}
+            >
+              {r.label}
+            </button>
+          ))}
+          {stats && (
+            <div className="it-region-counts">
+              <span>🇮🇳 {stats.india || 0}</span>
+              <span>🌍 {stats.international || 0}</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── CATEGORY TABS ── */}
         <div className="it-tabs-wrap">
           <div className="it-tabs">
-            {categories.map(cat => (
+            {visibleCats.map(cat => (
               <button key={cat}
                 className={`it-tab ${category === cat ? 'active' : ''}`}
                 onClick={() => { setCategory(cat); setSector('') }}>
-                {CAT_ICONS[cat] || '📌'} {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                {CAT_ICONS[cat] || '📌'} {cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1).replace('-', ' ')}
               </button>
             ))}
           </div>
         </div>
       </header>
 
-      {/* ── TRENDING SECTORS BAR ── */}
+      {/* ── TRENDING SECTORS ── */}
       <TrendingSectors dark={dark} activeSector={sector} onSectorClick={handleSectorClick}/>
 
       {/* ── DISCLAIMER ── */}
@@ -93,13 +130,15 @@ export default function App() {
       <div className="it-body">
         <main className="it-main">
 
-          {/* Stats row */}
           {stats && !loading && (
             <div className="it-stats">
-              <span>📰 <strong>{total}</strong> stories{sector ? ` in ${sector}` : ''}</span>
+              <span>📰 <strong>{total}</strong> stories
+                {regionTab === 'india' ? ' · 🇮🇳 India' :
+                 regionTab === 'international' ? ' · 🌍 International' : ''}
+                {sector ? ` in ${sector}` : ''}
+              </span>
               <span>🏷 Top sector: <strong>{stats.top_sectors?.[0]?.[0] || '—'}</strong></span>
               <span>📡 <strong>{Object.keys(stats.by_source||{}).length}</strong> sources</span>
-              <span>🗂 <strong>{Object.keys(stats.by_category||{}).length}</strong> categories</span>
             </div>
           )}
 
@@ -135,12 +174,11 @@ export default function App() {
           )}
         </main>
 
-        {/* Sector sidebar */}
         <SectorPanel dark={dark} activeSector={sector} onSectorClick={handleSectorClick}/>
       </div>
 
       <footer className="it-footer">
-        IndiaTrack · India-focused news aggregator · Sector tags are indicative only · Not SEBI registered · Not financial advice
+        IndiaTrack · India & International news · Sector tags are indicative only · Not SEBI registered · Not financial advice
       </footer>
     </div>
   )
